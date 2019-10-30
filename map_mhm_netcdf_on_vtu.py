@@ -14,23 +14,17 @@ from pyproj import Transformer
 #from vtk.numpy_interface import dataset_adapter as dsa
 
 
-# def variables
-src_nc_path = "../02_data/swc.nc"
-ogs_vtu_path = "../02_data/Selke_3D_Top.vtu"
-ogs_vtu_new_path = "map_netcdf_on_vtu2.vtu"
+# def variables ------------------------------------------------
+src_nc_path = "../02_data/swc.nc" # path of netcdf file
+ogs_vtu_path = "../02_data/Selke_3D_Top.vtu" # path of ogs-mesh
+ogs_vtu_new_path = "map_netcdf_on_vtu2.vtu" # path of updated ogs-mesh
 data_var_names = ["SWC_L01", "SWC_L02"] # names of the netcdf data variables
 map_func_type = 1 # def mapping func type 1: Voronoi, 2:Gaussian, 3:Shepard
-
-# import netcdf
-src_nc = Dataset(src_nc_path, mode = "r", format = "NETCDF4")
-
-# get spatial and temporal coordinates
-lat_dat = src_nc.variables["lat"][:].filled()
-lon_dat = src_nc.variables["lon"][:].filled()
-time = src_nc.variables["time"][:]
+src_nc_crs = "EPSG:4326"   # coordinate system of netcdf file
+ogs_vtu_crs = "EPSG:5684"   # coordinate sysetm of ogs-mesh file
 
 
-
+# def funs -----------------------------------------------------
 # get data
 def get_src_nc_data(src_nc, data_var_names):
     """
@@ -65,8 +59,6 @@ def init_src_poly(lon_dat, lat_dat):
 
     # transform points coordiantes
     transf = Transformer.from_crs(
-                            "EPSG:4326",
-                            "EPSG:5684",
                             src_nc_crs,
                             ogs_vtu_crs,
                             always_xy=True)
@@ -120,7 +112,7 @@ def read_ogs_vtu(in_filepath):
     return(dst.GetOutput())
     
 
-# def data mapping
+# def data mapping -------------------------------------------------
 def gaussian_kernel():
     """
     gaussian filter of point cloud in src_poly defined by radius
@@ -179,6 +171,7 @@ def map_data_on_ogs_vtu(src_poly, ogs_vtu):
     return(interpolator.GetOutput())
 
 
+
 def write_mapped_ogs_vtu(out_vtu, out_filename):
     """
     write the ogs-mesh including the newly mapped data
@@ -189,13 +182,23 @@ def write_mapped_ogs_vtu(out_vtu, out_filename):
     write_output.Write()
 
 
-# run script
+# run script -----------------------------------------------------
+# import netcdf
+src_nc = Dataset(src_nc_path, mode = "r", format = "NETCDF4")
+
+# get spatial and temporal coordinates
+lat_dat = src_nc.variables["lat"][:].filled()
+lon_dat = src_nc.variables["lon"][:].filled()
+time = src_nc.variables["time"][:]
+
+# extract netcdf data and transform to vtkPolyData 
 src_vars = get_src_nc_data(src_nc, data_var_names)
 src_poly = init_src_poly(lon_dat, lat_dat)
 add_nc_data_to_src_poly(src_poly, time, src_vars)
 
+# import ogs-mesh and map netcdf data on
 ogs_vtu = read_ogs_vtu(ogs_vtu_path)
-
 ogs_vtu_new = map_data_on_ogs_vtu(src_poly, ogs_vtu) 
 
+# output updated ogs-mesh
 write_mapped_ogs_vtu(ogs_vtu_new, ogs_vtu_new_path)
