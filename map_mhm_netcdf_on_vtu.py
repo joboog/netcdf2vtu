@@ -19,6 +19,7 @@ src_nc_path = "../02_data/swc.nc"
 ogs_vtu_path = "../02_data/Selke_3D_Top.vtu"
 ogs_vtu_new_path = "map_netcdf_on_vtu2.vtu"
 data_var_names = ["SWC_L01", "SWC_L02"] # names of the netcdf data variables
+map_func_type = 1 # def mapping func type 1: Voronoi, 2:Gaussian, 3:Shepard
 
 # import netcdf
 src_nc = Dataset(src_nc_path, mode = "r", format = "NETCDF4")
@@ -66,6 +67,8 @@ def init_src_poly(lon_dat, lat_dat):
     transf = Transformer.from_crs(
                             "EPSG:4326",
                             "EPSG:5684",
+                            src_nc_crs,
+                            ogs_vtu_crs,
                             always_xy=True)
     
     for i in range(len(points)):
@@ -117,24 +120,47 @@ def read_ogs_vtu(in_filepath):
     return(dst.GetOutput())
     
 
-def set_int_kernel():
+# def data mapping
+def gaussian_kernel():
+    """
+    gaussian filter of point cloud in src_poly defined by radius
+    around point in ogs_vtu
+    """
+    int_kernel = vtk.vtkGaussianKernel()
+    int_kernel.SetSharpness(2)
+    int_kernel.SetRadius(4000)
+    return(int_kernel)
+    
+def voronoi_kernel():
+    """
+    preferred for categorial data
+    takes value of closest points in src_poly
+    """
+    int_kernel = vtk.vtkVoronoiKernel()
+    return(int_kernel)
+    
+def shepard_kernel():
+    """
+    interpolation of point cloud in src_poly defined by power of radius
+    around point in ogs_vtu
+    """
+    int_kernel = vtk.vtkShepardKernel()
+    int_kernel.SetPowerParameter(2)
+    int_kernel.SetRadius(4000)
+    return(int_kernel)
+
+def set_map_function(map_func_type):
     """ 
     defines the mapping/interpolation algorithm
     """
-    
-    # gaussian kernel
-    #int_kernel = vtk.vtkGaussianKernel()
-    #int_kernel.SetSharpness(2)
-    #int_kernel.SetRadius(4000)
-    
-    #voronoi -- good for categorial data
-    int_kernel = vtk.vtkVoronoiKernel()
-    
-    # shepard kernel
-    #int_kernel = vtk.vtkShepardKernel()
-    #int_kernel.SetPowerParameter(2)
-    #int_kernel.SetRadius(4000)
-    return int_kernel
+    switcher = {
+        1: voronoi_kernel,
+        2: gaussian_kernel,
+        3: shepard_kernel
+    }
+    # Get the function from switcher dictionary
+    func = switcher.get(map_func_type, lambda: "Invalid func_type")
+    return(func())
 
 
 def map_data_on_ogs_vtu(src_poly, ogs_vtu):
@@ -146,7 +172,7 @@ def map_data_on_ogs_vtu(src_poly, ogs_vtu):
     interpolator.SetInputData(ogs_vtu)
     interpolator.SetSourceData(src_poly)
     # def interpolation algorithm
-    interpolator.SetKernel(set_int_kernel())
+    interpolator.SetKernel(set_map_function(map_func_type))
     # def value if interpolation does not work
     interpolator.SetNullValue(-9999)
     interpolator.Update()
