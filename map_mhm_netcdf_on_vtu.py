@@ -17,7 +17,7 @@ from pyproj import Transformer
 # def variables ------------------------------------------------
 src_nc_path = "../02_data/swc.nc" # path of netcdf file
 ogs_vtu_path = "../02_data/Selke_3D_Top.vtu" # path of ogs-mesh
-ogs_vtu_new_path = "map_netcdf_on_vtu2.vtu" # path of updated ogs-mesh
+ogs_vtu_new_path = "ogs_new.vtu" # path of updated ogs-mesh
 data_var_names = ["SWC_L01", "SWC_L02"] # names of the netcdf data variables
 map_func_type = 1 # def mapping func type 1: Voronoi, 2:Gaussian, 3:Shepard
 src_nc_crs = "EPSG:4326"   # coordinate system of netcdf file
@@ -81,8 +81,8 @@ def add_nc_data_to_src_poly(src_poly, time, src_vars):
     adds extracted data arrays from imported netcdf (src_nc) to 
     vtkPolyData obj (src_poly)
     """
-    for i in range(len(time)):
-        for j in range(len(src_vars)):
+    for j in range(len(src_vars)):
+        for i in range(len(time)):
             arr_name = src_vars[j][0] + "_%s" % str(int(time[i]))
             new_point_arr_vtk = numpy_support.numpy_to_vtk(src_vars[j][1][i].flatten())
             new_point_arr_vtk.SetName(arr_name)
@@ -189,16 +189,19 @@ src_nc = Dataset(src_nc_path, mode = "r", format = "NETCDF4")
 # get spatial and temporal coordinates
 lat_dat = src_nc.variables["lat"][:].filled()
 lon_dat = src_nc.variables["lon"][:].filled()
-time = src_nc.variables["time"][:]
+time = src_nc.variables["time"][:].filled()
 
 # extract netcdf data and transform to vtkPolyData 
 src_vars = get_src_nc_data(src_nc, data_var_names)
 src_poly = init_src_poly(lon_dat, lat_dat)
 add_nc_data_to_src_poly(src_poly, time, src_vars)
+print("finish")
 
 # import ogs-mesh and map netcdf data on
 ogs_vtu = read_ogs_vtu(ogs_vtu_path)
+print("ogs-mesh read")
 ogs_vtu_new = map_data_on_ogs_vtu(src_poly, ogs_vtu) 
-
+print("data mapped")
 # output updated ogs-mesh
 write_mapped_ogs_vtu(ogs_vtu_new, ogs_vtu_new_path)
+print("ogs-mesh updated")
