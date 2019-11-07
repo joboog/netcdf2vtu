@@ -3,7 +3,20 @@
 """
 Created on Wed Oct 30 14:35:05 2019
 
-@author: boog
+@author: Johannes Boog
+
+notes:
+      - this script maps data contained from a mHM netcdf on a ogs vtu mesh
+      - the mapped data is assigned as point data in the ogs vtu mesh
+      - you can choose different interpolation methods
+      - execute the script from the ogs6 project directory
+
+input:
+      - mHM netcdf file
+output: 
+      - a ogs vtu file series including point data arrays for specific 
+      variables and respective time steps
+      - xml file including the parameter bloc for the ogs6 project file
 """
 
 from netCDF4 import Dataset
@@ -11,18 +24,19 @@ import numpy as np
 import vtk
 from vtk.util import numpy_support
 from pyproj import Transformer
-#from vtk.numpy_interface import dataset_adapter as dsa
+from lxml import etree
 
 
 # def variables ------------------------------------------------
 src_nc_path = "../02_data/swc.nc" # path of netcdf file
-ogs_vtu_path = "../01_python_trial/ElbeDomainMesh.vtu" # path of ogs-mesh
-ogs_vtu_new_path = "../01_python_trial/ElbeDomainMesh_new.vtu" # path of updated ogs-mesh
-data_var_names = ["SWC_L01"]#, "SWC_L02"] # names of the netcdf data variables
+ogs_vtu_path = "../02_data/ElbeDomainMesh.vtu" # path of ogs-mesh
+ogs_vtu_new_path = "../01_python_trial/" # path of updated ogs-mesh
+ogs_vtu_new_name = "ElbeDomainMesh_new" # base name of updated ogs-mesh
+data_var_names = ["SWC_L01", "SWC_L02"] # names of the netcdf data variables
 map_func_type = 1 # def mapping func type 1: Voronoi, 2:Gaussian, 3:Shepard
 src_nc_crs = "EPSG:4326"   # coordinate system of netcdf file
 ogs_vtu_crs = "EPSG:5684"   # coordinate sysetm of ogs-mesh file
-
+mesh_parameter_type = "MeshNode" # type of mesh property parameter in ogs vtu
 
 # def funs -----------------------------------------------------
 # get data
@@ -36,7 +50,7 @@ def get_src_nc_data(src_nc, data_var_names):
         src_vars[i][1] = src_nc.variables[(src_vars[i][0])][:].filled()
     return(src_vars)
     
-    
+
 def init_src_poly(lon_dat, lat_dat):
     """
     initialize src_poly as vtkPolyData
@@ -76,19 +90,20 @@ def init_src_poly(lon_dat, lat_dat):
     return(src_poly)
     
 
-def add_nc_data_to_src_poly(src_poly, time,i, src_vars):
+def add_nc_data_to_src_poly(src_poly, time, time_step, src_vars):
     """
     adds extracted data arrays from imported netcdf (src_nc) to 
     vtkPolyData obj (src_poly)
     """
     for j in range(len(src_vars)):
         #for i in range(len(time)):
-            arr_name = src_vars[j][0] + "_%s" % str(int(time[i]))
-            new_point_arr_vtk = numpy_support.numpy_to_vtk(src_vars[j][1][i].flatten())
+            arr_name = src_vars[j][0] #+ "_%s" % str(int(time[time_step]))
+            new_point_arr_vtk = numpy_support.numpy_to_vtk(src_vars[j][1][time_step].flatten())
             new_point_arr_vtk.SetName(arr_name)
             src_poly.GetPointData().AddArray(new_point_arr_vtk)
     
     src_poly.Modified()
+    return(0)
     
     
 
@@ -168,7 +183,7 @@ def map_data_on_ogs_vtu(src_poly, ogs_vtu):
     # def value if interpolation does not work
     interpolator.SetNullValue(-9999)
     interpolator.Update()
-    return(interpolator.GetOutput().GetPointData())
+    return(interpolator.GetOutput())
     
 
 
@@ -178,11 +193,53 @@ def write_mapped_ogs_vtu(out_vtu, out_filename):
     write the ogs-mesh including the newly mapped data
     """
     write_output = vtk.vtkXMLUnstructuredGridWriter()
-    write_output.SetFileName(out_filename)
+    write_output.SetFileName(out_filename + ".vtu")
     write_output.SetInputData(out_vtu)
     write_output.Write()
 
 
+def create_ogs6_xml_bloc(src_vars, time, mesh_parameter_type, mesh_file):
+      """
+         defines input data bloc for ogs6 project file
+         each variable of src_vars will be defined as
+         TimeDependentHeterogeneousParameter including the definition 
+         of corresponding mesh property paramters related to specific 
+         data arrays in the ogs_vtu_new files
+      """
+      root = etree.Element("OpenGeoSysProject")
+      el_parameters = etree.SubElement(root, "parameters")
+      # define parameters for each variable in src_vars
+      for j in range(len(src_vars)):
+            # define the TimeDependentHeterogeneousParameter
+            el_parameter = etree.SubElement(el_parameters, "parameter")
+            el_name = etree.SubElement(el_parameter, "name")
+            el_name.text = src_vars[j][0]
+            el_type = etree.SubElement(el_parameter, "type")
+            el_type.text = "TimeDependentHeterogeneousParameter"
+            el_timeseries = etree.SubElement(el_parameter, "time_series")
+            for i in range(3):#len(time)):
+                  # def time steps set corresponding mesh property parameters
+                  el_pair = etree.SubElement(el_timeseries, "pair")
+                  el_time = etree.SubElement(el_pair, "time")
+                  el_time.text = str(int(time[i]))
+                  el_para_name = etree.SubElement(el_pair, "parameter_name")
+                  el_para_name.text = src_vars[j][0] + \
+                                    "_t%s" % str(int(time[i])) 
+                  # def corresponding mesh property parameters
+                  el_parameter = etree.SubElement(el_parameters, "parameter")
+                  el_name = etree.SubElement(el_parameter, "name")
+                  el_name.text = el_para_name.text
+                  el_type = etree.SubElement(el_parameter, "type")
+                  el_type.text = mesh_parameter_type
+                  el_mesh = etree.SubElement(el_parameter, "mesh")
+                  el_mesh.text = mesh_file[i]
+                  el_field_name = etree.SubElement(el_parameter, "field_name")
+                  el_field_name.text = src_vars[j][0]
+      
+      
+      return(etree.ElementTree(root))
+      
+      
 # run script -----------------------------------------------------
 
 # import ogs-mesh
@@ -197,28 +254,37 @@ print("netcdf file read")
 lat_dat = src_nc.variables["lat"][:].filled()
 lon_dat = src_nc.variables["lon"][:].filled()
 time = src_nc.variables["time"][:].filled()
+time = time * 3600 # convert to seconds
 print("coordinates extracted from netcdf")
 
-# extract netcdf data and transform to vtkPolyData 
+# extract netcdf data, initialize vtkPolyData 
 src_vars = get_src_nc_data(src_nc, data_var_names)
-print("vars extracted from netcdf")
+print("data extracted from netcdf")
 src_poly = init_src_poly(lon_dat, lat_dat)
 print("src_poly initialized")
 
 # add time loop for data mapping
-ogs_vtu_new = ogs_vtu
-
-for i in range(2):
-    add_nc_data_to_src_poly(src_poly, time, i, src_vars)
-    # !! change that add_nc_to_src_poly does add only arrays of current ts
-    #print("data to src_poly added") 
-    int_dat = map_data_on_ogs_vtu(src_poly, ogs_vtu) 
-    #print("data mapped on ogs-mesh")
-    print(i)
-
-
-print("time loop finished")
+ogs_vtu_new_names = [None] * len(time)
+for i in range(3):
+        src_poly.GetPointData().Initialize()    
+        add_nc_data_to_src_poly(src_poly, time, i, src_vars)
+        # interpolate
+        ogs_vtu_new = map_data_on_ogs_vtu(src_poly, ogs_vtu)
+        # write output vtu
+        ogs_vtu_new_names[i] = ogs_vtu_new_name + "_t%s" % str(int(time[i]))
+        write_mapped_ogs_vtu(ogs_vtu_new, 
+                             ogs_vtu_new_path + ogs_vtu_new_names[i])                        
 
 
-# output updated ogs-mesh
-#write_mapped_ogs_vtu(ogs_vtu_new, ogs_vtu_new_path)
+print("ogs vtu series written")
+
+
+# output ogs6 project file bloc
+tree = create_ogs6_xml_bloc(src_vars, time, 
+                            mesh_parameter_type, ogs_vtu_new_names)
+
+tree.write(ogs_vtu_new_name + ".xml", 
+           xml_declaration=True,
+           encoding='utf8',
+           pretty_print = True)
+print("ogs6 project file bloc written")
