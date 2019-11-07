@@ -246,6 +246,7 @@ src_nc = Dataset(src_nc_path, mode = "r", format = "NETCDF4")
 lat_dat = src_nc.variables["lat"][:].filled()
 lon_dat = src_nc.variables["lon"][:].filled()
 time = src_nc.variables["time"][:].filled()
+time = time * 3600
 
 # extract netcdf data and transform to vtkPolyData 
 src_vars = get_src_nc_data(src_nc, data_var_names)
