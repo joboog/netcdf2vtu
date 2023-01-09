@@ -4,13 +4,15 @@
 @author: joboog
 """
 
-from netCDF4 import Dataset
+
 import numpy as np
 import vtk
 from vtk.util import numpy_support
 from pyproj import Transformer
 
 from netcdf2vtk.mapping import set_map_function
+
+
 
 
 def get_src_nc_data(src_nc, data_var_names):
