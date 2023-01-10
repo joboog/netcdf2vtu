@@ -3,3 +3,4 @@
 *.pyc
 
 data/
+src/netcdf2vtk.egg-info/
