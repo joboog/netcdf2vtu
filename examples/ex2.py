@@ -9,7 +9,7 @@ from netCDF4 import Dataset
 # def variables ------------------------------------------------
 src_nc_path = "data/precip.nc" # path of netcdf file
 ogs_vtu_path = "data/Selke_3D_Top.vtu" # path of ogs-mesh
-ogs_vtu_new_path = "ogs_new2.vtu" # path of updated ogs-mesh
+ogs_vtu_new_path = "ex2_new2.vtu" # path of updated ogs-mesh
 data_var_names = ["precipitation", "relativeError"] # names of the netcdf data variables
 map_func_type = 1 # def mapping func type 1: Voronoi, 2:Gaussian, 3:Shepard
 src_nc_crs = "EPSG:4326"   # coordinate system of netcdf file
@@ -28,7 +28,7 @@ lon_dat = src_nc.variables["nlon"][:].filled()
 # extract netcdf data and transform to vtkPolyData
 src_vars = n2v.get_src_nc_data(src_nc, data_var_names)
 src_poly = n2v.init_src_poly(lon_dat, lat_dat, src_nc_crs, ogs_vtu_crs)
-n2v.add_nc_data_to_src_poly(src_poly, time, src_vars)
+n2v.add_nc_data_to_src_poly(src_poly, src_vars)
 print("finish")
 
 # import ogs-mesh and map netcdf data on
