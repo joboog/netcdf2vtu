@@ -66,8 +66,8 @@ class Mapper(object):
                             self.dst_crs)
 
         n2v.add_nc_data_to_src_poly(self.src_poly,
-                                    self.src_coords["time"],
-                                    self.src_data)
+                                    self.src_data,
+                                    self.src_coords["time"])
 
         print("VTP created from NetCDF.")
 

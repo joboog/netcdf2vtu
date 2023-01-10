@@ -78,15 +78,23 @@ def init_src_poly(lon_dat, lat_dat, src_crs, dst_crs):
     return(src_poly)
 
 
-def add_nc_data_to_src_poly(src_poly, time, src_vars):
+def add_nc_data_to_src_poly(src_poly, src_vars, time = None):
     """
     adds extracted data arrays from imported netcdf (src_nc) to
     vtkPolyData obj (src_poly)
     """
+    if time is None:
+        time = "F"
+
     for j in range(len(src_vars)):
         for i in range(len(time)):
-            arr_name = src_vars[j][0] + "_%s" % str(int(time[i]))
-            new_point_arr_vtk = numpy_support.numpy_to_vtk(src_vars[j][1][i].flatten())
+
+            if type(time) is str:
+                arr_name = src_vars[j][0]
+            else:
+                arr_name = src_vars[j][0] + "_%s" % str(int(time[i]))
+
+            new_point_arr_vtk = numpy_support.numpy_to_vtk(src_vars[j][1][i].ravel())
             new_point_arr_vtk.SetName(arr_name)
             src_poly.GetPointData().AddArray(new_point_arr_vtk)
 
