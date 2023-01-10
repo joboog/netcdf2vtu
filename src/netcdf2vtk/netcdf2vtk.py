@@ -36,11 +36,24 @@ def init_src_poly(lon_dat, lat_dat, src_crs, dst_crs):
 
     returnes src_poly
     """
-    # def point array
-    points = np.array([lon_dat.flatten(),
-                       lat_dat.flatten(),
-                       np.repeat(0, len(lat_dat.flatten()))
-                    ]).transpose()
+    # check dims and def point array
+    if len(lon_dat.shape) == 1 and len(lat_dat.shape) == 1:
+
+        xv, yv, zv = np.meshgrid(lon_dat, lat_dat, np.array([0]))
+        xv = xv.ravel()
+        yv = yv.ravel()
+        zv = zv.ravel()
+
+    elif len(lon_dat.shape) == 2 and len(lat_dat.shape) == 2:
+
+        xv = lon_dat.ravel()
+        yv = lat_dat.ravel()
+        zv = np.repeat(0, len(xv))
+
+    else:
+        raise ValueError("Shape of coordinate arrays not as expected!")
+
+    points = np.array([xv, yv, zv]).transpose()
 
     # def vtkPoints/cells
     src_points = vtk.vtkPoints()
