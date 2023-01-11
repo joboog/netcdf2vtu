@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "netcdf2vtk"
+version = "0.0.1"
+authors = [
+  { name="Johannes Boog", email="johannesboog@yahoo.de"},
+]
+description = "Mapping data from netCDF files on VTU."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://gitlab.com/ufz_digital_earth/netcdf2vtk"
