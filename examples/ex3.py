@@ -4,8 +4,8 @@
 import netcdf2vtk.mapper as nvmp
 
 # def variables ------------------------------------------------
-src_nc_path = "data/mhm.nc" # path of netcdf file
-ogs_vtu_path = "data/Selke_3D_Top.vtu" # path of ogs-mesh
+src_nc_path = "data/ex1_3.nc" # path of netcdf file
+ogs_vtu_path = "data/ogs.vtu" # path of ogs-mesh
 ogs_vtu_new_path = "ex3_new.vtu" # path of updated ogs-mesh
 data_var_names = ["SWC_L01", "SWC_L02"] # names of the netcdf data variables
 map_func_type = 1 # def mapping func type 1: Voronoi, 2:Gaussian, 3:Shepard

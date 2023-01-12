@@ -2,5 +2,6 @@
 *.pvd
 *.pyc
 
-data/
+extdata/
+!data/*.vtu
 src/netcdf2vtk.egg-info/
