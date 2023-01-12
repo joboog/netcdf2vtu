@@ -9,85 +9,110 @@ class Mapper(object):
 
     def __init__(
         self,
-        src_nc_path,
-        dst_vtu_path,
+        nc_path,
+        vtu_path,
         data_var_names,
         map_func_type,
-        src_crs,
-        dst_crs,
-        nullvalue
+        nc_crs,
+        vtu_crs,
+        nullvalue,
+        **kwargs_nc
     ):
-        self.src_nc_path = src_nc_path
-        self.dst_vtu_path = dst_vtu_path
-        self.data_var_names = data_var_names
+        self.nc = dict(path = nc_path,
+                        crs = nc_crs,
+                        data_names = data_var_names)
+        self.in_vtu = dict(path = vtu_path,
+                        crs = vtu_crs)
+
         self.map_func_type = map_func_type
-        self.src_crs = src_crs
-        self.dst_crs = dst_crs
         self.nullvalue = nullvalue
 
         # read source nc
-        self.src_nc = Dataset(self.src_nc_path, mode = "r", format = "NETCDF4")
+        dset = Dataset(self.nc["path"], mode = "r", format = "NETCDF4",
+                        **kwargs_nc)
+        self.nc.update({"dataset" : dset})
+
         # read dst vtu
-        self.dst_vtu = n2v.read_ogs_vtu(self.dst_vtu_path)
+        dst_vtu = n2v.read_vtu(self.in_vtu["path"])
+        self.in_vtu.update({"vtu" : dst_vtu})
 
 
-    def get_src_coords(self,
-                        lat_name,
-                        lon_name,
-                        time_name = None):
+    def get_nc_variables(self):
 
-        lat_dat = self.src_nc.variables[lat_name][:].filled()
-        lon_dat = self.src_nc.variables[lon_name][:].filled()
+        self.nc["dataset"].variables
+
+
+    def set_nc_coord_names(self,
+                            lat_name,
+                            lon_name,
+                            time_name = None):
+
+        self.nc.update({"coord_names" : {"lat_name" : lat_name,
+                                        "lon_name" : lon_name,
+                                        "time_name" : time_name}})
+
+
+    def set_nc_data_names(self, var_names):
+
+        self.nc["data_names"] = var_names
+
+
+    def read_nc_coords(self):
+
+        lat_name, lon_name, time_name = self.nc["coord_names"].values()
+
+        lat_dat = self.nc["dataset"].variables[lat_name][:].filled()
+        lon_dat = self.nc["dataset"].variables[lon_name][:].filled()
 
         if time_name is not None:
-            time = self.src_nc.variables[time_name][:].filled()
+            time = self.nc["dataset"].variables[time_name][:].filled()
         else:
             time = None
 
-        self.src_coords = {"lat": lat_dat, "lon": lon_dat, "time" : time}
+        coords = {"lat": lat_dat, "lon": lon_dat, "time" : time}
+        self.nc.update({"coords" : coords})
 
 
-    def set_data_var_names(self, var_names):
+    def read_nc_data(self):
 
-        self.data_var_names = var_names
-
-
-    def get_scr_nc_data(self):
-
-        self.src_data = n2v.get_src_nc_data(self.src_nc, self.data_var_names)
+        nc_data = n2v.get_nc_data(self.nc["dataset"],
+                                  self.nc["data_names"])
+        self.nc.update({"data" : nc_data})
 
 
-    def init_src_poly(self):
+    def interpolate(self):
 
-        self.src_poly = n2v.init_src_poly(
-                            self.src_coords["lon"],
-                            self.src_coords["lat"],
-                            self.src_crs,
-                            self.dst_crs)
+        self.vtp = n2v.create_vtp(
+                    self.nc["coords"]["lon"],
+                    self.nc["coords"]["lat"],
+                    self.nc["crs"],
+                    self.in_vtu["crs"])
 
-        n2v.add_nc_data_to_src_poly(self.src_poly,
-                                    self.src_data,
-                                    self.src_coords["time"])
+        n2v.nc_data_to_vtp(self.vtp,
+                           self.nc["data"],
+                           self.nc["coords"]["time"])
 
-        print("VTP created from NetCDF.")
+        print("NetCDF converted to VTP.")
 
 
-    def map_data(self):
-
-        self.out_vtu = n2v.map_data_on_ogs_vtu(
-                        self.src_poly, self.dst_vtu, self.map_func_type,
+        self.out_vtu = n2v.interpolate_vtp_data_on_vtu(
+                        self.vtp,
+                        self.in_vtu["vtu"],
+                        self.map_func_type,
                         self.nullvalue)
-        print("Data mapped.")
+
+        print("Data from VTP interpolated to VTU.")
 
 
     def write_out_vtu(self, path):
         # output updated ogs-mesh
-        n2v.write_mapped_ogs_vtu(self.out_vtu, path)
+        n2v.write_vtu(self.out_vtu, path)
         print("New VTU mesh written to disk.")
 
 
-    def write_src_vtp(self, path):
-        n2v.write_src_poly(self.src_poly, path)
+    def write_vtp(self, path):
+
+        n2v.write_vtp(self.vtp, path)
 
 
     def map(self,
@@ -96,8 +121,11 @@ class Mapper(object):
             lon_name,
             time_name = None):
         """Map data from NetCDF to VTU."""
-        self.get_src_coords(lat_name, lon_name, time_name)
-        self.get_scr_nc_data()
-        self.init_src_poly()
-        self.map_data()
+
+        self.set_nc_coord_names(lat_name,
+                                lon_name,
+                                time_name)
+        self.read_nc_coords()
+        self.read_nc_data()
+        self.interpolate()
         self.write_out_vtu(out_path)
