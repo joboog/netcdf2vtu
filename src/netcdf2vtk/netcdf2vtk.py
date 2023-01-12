@@ -4,14 +4,138 @@
 @author: joboog
 """
 
-
+from netCDF4 import Dataset
 import numpy as np
+from pyproj import Transformer
 import vtk
 from vtk.util import numpy_support
-from pyproj import Transformer
 
-from netcdf2vtk.mapping import set_map_function
 
+class Mapper(object):
+    """A class for convenient mapping of a NetCDF to VTK."""
+
+    def __init__(
+        self,
+        nc_path,
+        vtu_path,
+        data_var_names,
+        map_func_type,
+        nc_crs,
+        vtu_crs,
+        nullvalue,
+        **kwargs_nc
+    ):
+        self.nc = dict(path = nc_path,
+                        crs = nc_crs,
+                        data_names = data_var_names)
+        self.in_vtu = dict(path = vtu_path,
+                        crs = vtu_crs)
+
+        self.map_func_type = map_func_type
+        self.nullvalue = nullvalue
+
+        # read source nc
+        dset = Dataset(self.nc["path"], mode = "r", format = "NETCDF4",
+                        **kwargs_nc)
+        self.nc.update({"dataset" : dset})
+
+        # read dst vtu
+        dst_vtu = read_vtu(self.in_vtu["path"])
+        self.in_vtu.update({"vtu" : dst_vtu})
+
+
+    def get_nc_variables(self):
+
+        self.nc["dataset"].variables
+
+
+    def set_nc_coord_names(self,
+                            lat_name,
+                            lon_name,
+                            time_name = None):
+
+        self.nc.update({"coord_names" : {"lat_name" : lat_name,
+                                        "lon_name" : lon_name,
+                                        "time_name" : time_name}})
+
+
+    def set_nc_data_names(self, var_names):
+
+        self.nc["data_names"] = var_names
+
+
+    def read_nc_coords(self):
+
+        lat_name, lon_name, time_name = self.nc["coord_names"].values()
+
+        lat_dat = self.nc["dataset"].variables[lat_name][:].filled()
+        lon_dat = self.nc["dataset"].variables[lon_name][:].filled()
+
+        if time_name is not None:
+            time = self.nc["dataset"].variables[time_name][:].filled()
+        else:
+            time = None
+
+        coords = {"lat": lat_dat, "lon": lon_dat, "time" : time}
+        self.nc.update({"coords" : coords})
+
+
+    def read_nc_data(self):
+
+        nc_data = get_nc_data(self.nc["dataset"],
+                                  self.nc["data_names"])
+        self.nc.update({"data" : nc_data})
+
+
+    def interpolate(self):
+
+        self.vtp = create_vtp(
+                    self.nc["coords"]["lon"],
+                    self.nc["coords"]["lat"],
+                    self.nc["crs"],
+                    self.in_vtu["crs"])
+
+        nc_data_to_vtp(self.vtp,
+                           self.nc["data"],
+                           self.nc["coords"]["time"])
+
+        print("NetCDF converted to VTP.")
+
+
+        self.out_vtu = interpolate_vtp_data_on_vtu(
+                        self.vtp,
+                        self.in_vtu["vtu"],
+                        self.map_func_type,
+                        self.nullvalue)
+
+        print("Data from VTP interpolated to VTU.")
+
+
+    def write_out_vtu(self, path):
+        # output updated ogs-mesh
+        write_vtu(self.out_vtu, path)
+        print("New VTU mesh written to disk.")
+
+
+    def write_vtp(self, path):
+
+        write_vtp(self.vtp, path)
+
+
+    def map(self,
+            out_path,
+            lat_name,
+            lon_name,
+            time_name = None):
+        """Map data from NetCDF to VTU."""
+
+        self.set_nc_coord_names(lat_name,
+                                lon_name,
+                                time_name)
+        self.read_nc_coords()
+        self.read_nc_data()
+        self.interpolate()
+        self.write_out_vtu(out_path)
 
 
 
@@ -147,3 +271,48 @@ def write_vtu(vtu, path):
     write_output.SetFileName(path)
     write_output.SetInputData(vtu)
     write_output.Write()
+
+
+def set_map_function(map_func_type):
+    """
+    defines the mapping/interpolation algorithm
+    """
+    switcher = {
+        1: voronoi_kernel,
+        2: gaussian_kernel,
+        3: shepard_kernel
+    }
+    # Get the function from switcher dictionary
+    func = switcher.get(map_func_type, lambda: "Invalid func_type")
+    return(func())
+
+
+def gaussian_kernel():
+    """
+    gaussian filter of point cloud in src_poly defined by radius
+    around point in ogs_vtu
+    """
+    int_kernel = vtk.vtkGaussianKernel()
+    int_kernel.SetSharpness(2)
+    int_kernel.SetRadius(4000)
+    return(int_kernel)
+
+
+def voronoi_kernel():
+    """
+    preferred for categorial data
+    takes value of closest points in src_poly
+    """
+    int_kernel = vtk.vtkVoronoiKernel()
+    return(int_kernel)
+
+
+def shepard_kernel():
+    """
+    interpolation of point cloud in src_poly defined by power of radius
+    around point in ogs_vtu
+    """
+    int_kernel = vtk.vtkShepardKernel()
+    int_kernel.SetPowerParameter(2)
+    int_kernel.SetRadius(4000)
+    return(int_kernel)
