@@ -19,3 +19,8 @@ classifiers = [
 
 [project.urls]
 "Homepage" = "https://gitlab.com/ufz_digital_earth/netcdf2vtk"
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
