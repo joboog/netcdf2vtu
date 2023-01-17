@@ -1,0 +1,25 @@
+stages:
+  - test
+
+run_tests:
+  stage: test
+  image: $CI_REGISTRY_IMAGE:latest
+  variables:
+    PROJ_DIR: "$CI_PROJECT_DIR/ci/proj"
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  cache:
+    paths:
+      - .cache/pip
+  before_script:
+    - cat /etc/os-release
+    - if [ ! -d "$PROJ_DIR" ]; then mkdir -p "$PROJ_DIR"; fi
+    - python --version
+    - pip install -r requirements.txt # use pyproj without version, remove netcdf2vtk from file
+    - pip install -e .
+    - pip list
+  script:
+    - pytest -v --cov=netcdf2vtk
+  coverage: /^TOTAL.+?(\d+\%)$/
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_COMMIT_BRANCH == "master"'
