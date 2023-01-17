@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""These are the unit tests of the netcdf2vtk module."""
 
 from netCDF4 import Dataset
 from numpy import array, ndarray
