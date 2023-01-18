@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""These are the unit tests of the netcdf2vtk module."""
+"""These are the unit tests of the netcdf2vtu module."""
 
 from netCDF4 import Dataset
 from numpy import array, ndarray
@@ -10,7 +10,7 @@ from vtkmodules.vtkFiltersPoints import vtkVoronoiKernel, vtkGaussianKernel, vtk
 from vtk.numpy_interface import dataset_adapter as dsa
 from os.path import isfile
 
-import netcdf2vtk.netcdf2vtk as n2v
+import netcdf2vtu.netcdf2vtu as n2v
 
 
 nc_file1 = "data/ex1_3.nc"

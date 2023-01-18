@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "netcdf2vtk"
+name = "netcdf2vtu"
 version = "0.0.1"
 authors = [
   { name="Johannes Boog", email="johannesboog@yahoo.de"},
@@ -18,7 +18,7 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://gitlab.com/ufz_digital_earth/netcdf2vtk"
+"Homepage" = "https://gitlab.com/ufz_digital_earth/netcdf2vtu"
 
 [tool.pytest.ini_options]
 addopts = [

@@ -1,3 +1,3 @@
-# NetCDF2VTK
+# NetCDF2VTU
 
 Blablablablabla.
