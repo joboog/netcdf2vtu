@@ -1,4 +1,10 @@
-# -*- coding: utf-8 -*-
+"""A Python package to interpolate data from a netcdf file onto
+a VTU file.
+
+**netcdf2vtk** provides a the *Mapper* class to read in a netcdf input
+file, a destination VTU file and to set some specifics for data
+interpolation.
+"""
 
 from netCDF4 import Dataset
 import numpy as np
@@ -8,7 +14,31 @@ from vtk.util import numpy_support
 
 
 class Mapper(object):
-    """A class for convenient mapping of a NetCDF to VTK."""
+    """
+    A class for reading and interpolating data from a netcdf file onto
+    a VTU file.
+
+    Parameters
+    ----------
+    nc_path : str
+        The path to the netcdf input file.
+    vtu_path : str
+        The path to the destination VTU file.
+    data_var_names : list of str
+        A list of variable names to read from the netcdf file.
+    map_func_type : int
+        The type of mapping function to use for interpolation.
+    nc_crs : str
+        The coordinate reference system of the netcdf file.
+    vtu_crs : str
+        The coordinate reference system of the VTU file.
+    nullvalue : float
+        The value to use for missing data points during interpolation.
+    kwargs_nc : dict
+        Additional keyword arguments to pass to the netcdf4 library when
+         reading the netcdf file.
+
+    """
 
     def __init__(
         self,
@@ -21,6 +51,10 @@ class Mapper(object):
         nullvalue,
         **kwargs_nc
     ):
+        """
+        Initializes the Mapper object with the provided inputs.
+        """
+
         self.nc = dict(path = nc_path,
                         crs = nc_crs,
                         data_names = data_var_names)
@@ -41,6 +75,9 @@ class Mapper(object):
 
 
     def get_nc_variables(self):
+        """
+        Returns a numpy.ndarray variable data of the netcdf dataset.
+        """
 
         self.nc["dataset"].variables
 
@@ -49,6 +86,10 @@ class Mapper(object):
                             lat_name,
                             lon_name,
                             time_name = None):
+        """
+        Sets the names of the latitude, longitude, and time variables
+        to be read from the dataset in `self.nc["dataset"]`.
+        """
 
         self.nc.update({"coord_names" : {"lat_name" : lat_name,
                                         "lon_name" : lon_name,
@@ -56,11 +97,24 @@ class Mapper(object):
 
 
     def set_nc_data_names(self, var_names):
+        """
+        Sets the names of the variables to be read from the netcdf
+        dataset in `self.nc["dataset"]`.
+
+        Parameter
+        ---------
+        var_names : list of str
+            A list of variable names to read from the netcdf file.
+        """
 
         self.nc["data_names"] = var_names
 
 
     def read_nc_coords(self):
+        """
+        Reads the latitude, longitude, and time coordinates from the
+        netcdf dataset in `self.nc["dataset"]`.
+        """
 
         lat_name, lon_name, time_name = self.nc["coord_names"].values()
 
@@ -77,6 +131,10 @@ class Mapper(object):
 
 
     def read_nc_data(self):
+        """
+        Reads the data variables specified in `self.nc["data_names"]`
+        from the netcdf dataset.
+        """
 
         nc_data = get_nc_data(self.nc["dataset"],
                                   self.nc["data_names"])
@@ -84,6 +142,12 @@ class Mapper(object):
 
 
     def interpolate(self):
+        """
+        Interpolates the data from the netcdf file onto the VTU file.
+        It creates a vtkPolyData instance from `self.nc["dataset"]` and
+        interpolates this on a copy of an instance of
+        vtkUnstructuredGrid created from the input VTU file.
+        """
 
         self.vtp = create_vtp(
                     self.nc["coords"]["lon"],
@@ -108,12 +172,30 @@ class Mapper(object):
 
 
     def write_out_vtu(self, path):
-        # output updated ogs-mesh
+        """
+        Writes the updated instance of vtkUnstructuredGrid to the
+        specified path as VTU file.
+
+        Parameter
+        ---------
+        path : str
+            The path of the VTU file to be written.
+        """
+
         write_vtu(self.out_vtu, path)
         print("New VTU mesh written to disk.")
 
 
     def write_vtp(self, path):
+        """
+        Writes the vtkPolyData instance created to the
+        specified path as VTP file.
+
+        Parameter
+        ---------
+        path : str
+            The path of the VTP file to be written.
+        """
 
         write_vtp(self.vtp, path)
 
@@ -123,7 +205,9 @@ class Mapper(object):
             lat_name,
             lon_name,
             time_name = None):
-        """Map data from NetCDF to VTU."""
+        """
+        A wrapper for simple interpolation.
+        """
 
         self.set_nc_coord_names(lat_name,
                                 lon_name,
@@ -137,25 +221,63 @@ class Mapper(object):
 
 def get_nc_data(nc, data_var_names):
     """
-    extract variable data out of imported netcdf (src_nc)
+    Extract variable data out of a netcdf4 dataset.
+
+    Parameters
+    ----------
+    nc : netCDF4.Dataset
+        The netcdf dataset to extract data from.
+    data_var_names : list of str
+        A list of variable names to extract from nc.
+
+    Returns
+    -------
+    numpy array
+        A numpy array the a variable name and its corresponding data
+        as a numpy array.
     """
+
     var_data = [None] * len(data_var_names)
     vars = np.array([data_var_names, var_data]).T
     for i in range(len(vars)):
         vars[i][1] = nc.variables[(vars[i][0])][:].filled()
+    #TODO: output vars as list of tuples instead of numpy array!
     return(vars)
 
 
 def create_vtp(lon_dat, lat_dat, nc_crs, vtu_crs):
     """
+    Initializes a vtkPolyData object and sets its points and cells based
+     on input latitude and longitude coordinates.
+    The point coordinates are transformed to the specified destination
+    coordinate reference system.
+
     initialize src_poly as vtkPolyData
     set points and cells for src_poly (vtkPolyData object where netcdf
     data goes into)
     cells are vertice cells based on points
     point coordinates are transformed
 
-    returnes src_poly
+    Parameters
+    ----------
+    lon_dat : numpy.ndarray
+        A numpy array of longitude coordinates.
+    lat_dat : numpy.ndarray
+        A numpy array of latitude coordinates.
+    nc_crs : str
+        The coordinate reference system of the input latitude and
+        longitude coordinates.
+    vtu_crs : str
+        The destination coordinate reference system to transform the
+        point coordinates to.
+
+    Returns
+    -------
+    vtk.vtkPolyData
+        A vtkPolyData object with points and cells set based on input
+        coordinates.
     """
+
     # check dims and def point array
     if len(lon_dat.shape) == 1 and len(lat_dat.shape) == 1:
 
@@ -200,9 +322,21 @@ def create_vtp(lon_dat, lat_dat, nc_crs, vtu_crs):
 
 def nc_data_to_vtp(vtp, nc_data, time = None):
     """
-    adds extracted data arrays from imported netcdf (src_nc) to
-    vtkPolyData obj (src_poly)
+    Adds extracted variable data from a netcdf file to a vtkPolyData
+    object.
+
+    Parameters
+    ----------
+    vtp : vtk.vtkPolyData
+        The vtkPolyData object to add the netcdf data to.
+    nc_data : numpy array
+        A numpy array of the a variable name and its corresponding data
+        as a numpy array
+    time : numpy.ndarray, optional
+        An array of time values for the netcdf data. If not provided,
+        the time value will be set to "FALSE".
     """
+
     if time is None:
         time = "F"
 
@@ -224,8 +358,16 @@ def nc_data_to_vtp(vtp, nc_data, time = None):
 
 def write_vtp(vtp, outputfile_name):
     """
-    writes imported netcdf as vtkPolyData obj
+    Writes a vtkPolyData object to a file.
+
+    Parameters
+    ----------
+    vtp : vtk.vtkPolyData
+        The vtkPolyData object to write to a file.
+    outputfile_name : str
+        The path of the file to write the vtkPolyData object to.
     """
+
     write_ouput = vtk.vtkXMLPolyDataWriter()
     write_ouput.SetInputData(vtp)
     write_ouput.SetFileName(outputfile_name)
@@ -234,8 +376,19 @@ def write_vtp(vtp, outputfile_name):
 
 def read_vtu(in_filepath):
     """
-    reads ogs mesh file where the netcdf data will be mapped on
+    Reads an OGS mesh file and returns it as a vtkUnstructuredGrid object.
+
+    Parameters
+    ----------
+    in_filepath : str
+        The path of the VTU file to read.
+
+    Returns
+    -------
+    vtk.vtkUnstructuredGrid
+        The VTU file as a vtkUnstructuredGrid instance.
     """
+
     dst = vtk.vtkXMLUnstructuredGridReader()
     dst.SetFileName(in_filepath)
     dst.Update()
@@ -244,9 +397,26 @@ def read_vtu(in_filepath):
 
 def interpolate_vtp_data_on_vtu(vtp, vtu, map_func_type, nullvalue):
     """
-    maps the data of src_poly on imported ogs-mesh (ogs_vtu) using the
-    interpolation algorithm defined in set_int_kernel()
+    Maps the data of a vtkPolyData object onto a vtkUnstructuredGrid
+    object using a specified interpolation algorithm.
+
+    Parameters
+    ----------
+    vtp : vtk.vtkPolyData
+        The object that contains the data to be interpolated.
+    vtu : vtk.vtkUnstructuredGrid
+        The object that the data will be interpolated onto.
+    map_func_type : int
+        The type of mapping function to use for interpolation.
+    nullvalue : float
+        The value to use for missing data points during interpolation.
+
+    Returns
+    -------
+    vtk.vtkUnstructuredGrid
+        An object with the interpolated data.
     """
+
     interpolator = vtk.vtkPointInterpolator()
     interpolator.SetInputData(vtu)
     interpolator.SetSourceData(vtp)
@@ -261,7 +431,14 @@ def interpolate_vtp_data_on_vtu(vtp, vtu, map_func_type, nullvalue):
 
 def write_vtu(vtu, path):
     """
-    write the ogs-mesh including the newly mapped data
+    Writes a vtkUnstructuredGrid  object to a file.
+
+    Parameters
+    ----------
+    vtp : vtk.vtkUnstructuredGrid
+        The vtkUnstructuredGrid object to write to a file.
+    outputfile_name : str
+        The path of the VTU file to be written.
     """
     write_output = vtk.vtkXMLUnstructuredGridWriter()
     write_output.SetFileName(path)
@@ -271,8 +448,22 @@ def write_vtu(vtu, path):
 
 def set_map_function(map_func_type):
     """
-    defines the mapping/interpolation algorithm
+    Returns the specified interpolation/mapping algorithm.
+
+    Parameters
+    ----------
+    map_func_type : int
+        The type of mapping function to use for interpolation.
+        1: voronoi_kernel
+        2: gaussian_kernel
+        3: shepard_kernel
+
+    Returns
+    -------
+    vtk.vtkInterpolationKernel
+        An object of the specified interpolation/mapping algorithm.
     """
+
     switcher = {
         1: voronoi_kernel,
         2: gaussian_kernel,
@@ -285,19 +476,30 @@ def set_map_function(map_func_type):
 
 def gaussian_kernel():
     """
-    gaussian filter of point cloud in src_poly defined by radius
-    around point in ogs_vtu
+    Gaussian filter of point cloud defined by
+    radius around a point.
+
+    Returns
+    -------
+    vtk.vtkGaussianKernel
+        The Gaussian filter interpolation kernel.
     """
     int_kernel = vtk.vtkGaussianKernel()
     int_kernel.SetSharpness(2)
     int_kernel.SetRadius(4000)
+    #TODO: add kwargs to set the sharpness and radius
     return(int_kernel)
 
 
 def voronoi_kernel():
     """
-    preferred for categorial data
-    takes value of closest points in src_poly
+    Preferred for categorical data.
+    Takes value of the closest point.
+
+    Returns
+    -------
+    vtk.vtkVoronoiKernel
+        The voronoi interpolation kernel.
     """
     int_kernel = vtk.vtkVoronoiKernel()
     return(int_kernel)
@@ -305,8 +507,13 @@ def voronoi_kernel():
 
 def shepard_kernel():
     """
-    interpolation of point cloud in src_poly defined by power of radius
-    around point in ogs_vtu
+    Interpolation of a point cloud object defined by
+    power function of the radius around a point.
+
+    Returns
+    -------
+    vtk.vtkShepardKernel
+        The Shepard interpolation kernel.
     """
     int_kernel = vtk.vtkShepardKernel()
     int_kernel.SetPowerParameter(2)

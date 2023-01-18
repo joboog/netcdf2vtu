@@ -1,16 +1,20 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""Example of how to use netcdf2vtk
+
+This script shows how to use netcdf2vtk to map an example netcdf4 file
+onta a VTU file. Both files are present in the `data` folder.
+"""
 
 from netcdf2vtk.netcdf2vtk import Mapper
 
 # def variables ------------------------------------------------
-nc_path = "data/ex2_4.nc" # path of netcdf file
-vtu_path = "data/ogs.vtu" # path of ogs-mesh
-vtu_new_path = "ex4_new.vtu" # path of updated ogs-mesh
-data_var_names = ["precipitation", "relativeError"] # names of the netcdf data variables
-map_func_type = 1 # def mapping func type 1: Voronoi, 2:Gaussian, 3:Shepard
-nc_crs = "EPSG:4326"   # coordinate system of netcdf file
-vtu_crs = "EPSG:5684"   # coordinate sysetm of ogs-mesh file
+nc_path = "data/ex2_4.nc" # path of input netcdf file
+vtu_path = "data/ogs.vtu" # path of vtu file
+vtu_new_path = "ex4_new.vtu" # path of updated vtu file
+# names of the netcdf data variables
+data_var_names = ["precipitation", "relativeError"]
+map_func_type = 1 # mapping func type 1: Voronoi, 2:Gaussian, 3:Shepard
+nc_crs = "EPSG:4326" # coordinate system of netcdf file
+vtu_crs = "EPSG:5684" # coordinate sysetm of vtu file
 nullvalue = -9999
 
 # run script ------------------------------------------
