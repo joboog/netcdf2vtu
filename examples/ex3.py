@@ -1,10 +1,10 @@
-"""Example of how to use netcdf2vtk
+"""Example of how to use netcdf2vtu
 
-This script shows how to use netcdf2vtk to map an example netcdf4 file
+This script shows how to use netcdf2vtu to map an example netcdf4 file
 onta a VTU file. Both files are present in the `data` folder.
 """
 
-from netcdf2vtk.netcdf2vtk import Mapper
+from netcdf2vtu.netcdf2vtu import Mapper
 
 # setup ---------------------------------------------------------
 nc_path = "data/ex1_3.nc" # path of input netcdf file

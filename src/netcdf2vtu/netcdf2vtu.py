@@ -1,7 +1,7 @@
 """A Python package to interpolate data from a netcdf file onto
 a VTU file.
 
-**netcdf2vtk** provides a the *Mapper* class to read in a netcdf input
+**netcdf2vtu** provides a the *Mapper* class to read in a netcdf input
 file, a destination VTU file and to set some specifics for data
 interpolation.
 """
