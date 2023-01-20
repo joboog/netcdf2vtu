@@ -1,5 +1,8 @@
 # NetCDF2VTU
 
+[![Pipeline Status](https://gitlab.com/joboog/netcdf2vtu/badges/master/pipeline.svg)](https://gitlab.com/joboog/netcdf2vtu/-/commits/master)
+[![Test Coverage](https://gitlab.com/joboog/netcdf2vtu/badges/master/coverage.svg)](https://gitlab.com/joboog/netcdf2vtu/-/jobs)
+
 Netcdf2vtu is a Python package to interpolate data from netCDF on VTU
  files.
 
@@ -82,7 +85,7 @@ including the interpolated data.
 
 ## Contribution
 
-If there are any problems please raise an issue [here](https://gitlab.com/joboog/netcdf2vtu/-/issues).)
+If there are any problems please raise an issue [here](https://gitlab.com/joboog/netcdf2vtu/-/issues).
 
 Please look at [CONTRIBUTING.md](./CONTRIBUTING.md).
 
