@@ -3,14 +3,14 @@
 [![Pipeline Status](https://gitlab.com/joboog/netcdf2vtu/badges/master/pipeline.svg)](https://gitlab.com/joboog/netcdf2vtu/-/commits/master)
 [![Test Coverage](https://gitlab.com/joboog/netcdf2vtu/badges/master/coverage.svg)](https://gitlab.com/joboog/netcdf2vtu/-/jobs)
 
-Netcdf2vtu is a Python package to interpolate data from netCDF on VTU
- files.
+Netcdf2vtu is a Python package including a command line interface (CLI)
+ to interpolate data from netCDF on VTU files.
 
 ## Setup
 
 The package is still under development and not yet available on as
 package on https://pypi.org .
-You have to actually install from a clone of the repo.
+You have to actually install it from a clone of the repo.
 
 Ideally, you have created a virtual python environment. If not look
 [here](https://packaging.python.org/en/latest/tutorials/installing-packages/#creating-virtual-environments).
@@ -33,10 +33,16 @@ $ pip install .
 
 You can run the tests with:
 ```
-$ pytest
+$ pytest .
 ```
 
 ## Usage
+
+Netcdf2vtu can be imported as a Python module or used from the command
+ line.
+
+
+### As imported module
 
 A brief example of how to map data from the NETCDF4 file `data/ex1_3.nc`
 on the destination VTU `data/ogs.vtu` using the `Mapper` class is
@@ -74,14 +80,52 @@ mapper = Mapper(nc_path,
 
 And start the interpolation:
 ```
-mapper.map(out_path = "ex3_mapper2_new_vtu.vtu",
+mapper.map(out_path = vtu_new_path,
            lat_name = "lat",
            lon_name = "lon",
            time_name = "time")
 ```
 
-The outputted file `ex3_mapper2_new_vtu.vtu` is a copy of the VTU file
-including the interpolated data.
+The outputted file `ex3_new.vtu` is a copy of the VTU file
+`data/ogs.vtu` including the interpolated data.
+
+
+### Command line interface
+
+From the command line you can do the same as above with:
+
+```
+$ netcdf2vtu -o ex3_new.vtu --time time data/ex1_3.nc data/ogs.vtu EPSG:4326 EPSG:5684 SWC_L01 SWC_L02
+```
+Note that the arguments to define the name of the output VTU file, the `map_func_type` and names for coordinates have default values and may not need to be explicitly set in the call as shown above.
+Use the help function to see the specifics of the `netcdf2vtu` command:
+
+```
+$ netcdf2vtu -h
+
+usage: netcdf2vtu [-h] [-o OUT_VTU] [-m MAP_TYPE] [-n NULLVALUE] [--lat LAT] [--lon LON] [--time TIME] in_nc in_vtu nc_crs vtu_crs var_names [var_names ...]
+
+Interpolates data from netCDF4 files to VTU files.
+
+positional arguments:
+  in_nc                 Path to the input netCDF file.
+  in_vtu                Path to the input VTU file.
+  nc_crs                CRS of input netcdf file
+  vtu_crs               CRS of input vtu file.
+  var_names             Names of the data variables in the input netcdf file.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o OUT_VTU, --out_vtu OUT_VTU
+                        Path to the output VTU file; default is "out.vtu".
+  -m MAP_TYPE, --map_type MAP_TYPE
+                        Type of interpolation function; default is 1.
+  -n NULLVALUE, --nullvalue NULLVALUE
+                        Nullvalue; default is -9999.
+  --lat LAT             Name of the latitude variable; default is "lat".
+  --lon LON             Name of the longitude variable; default is "lon".
+  --time TIME           Name of the time variable if present.
+```
 
 ## Contribution
 
