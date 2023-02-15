@@ -30,3 +30,6 @@ dependencies = [
 addopts = [
     "--import-mode=importlib",
 ]
+
+[project.scripts]
+netcdf2vtu = "netcdf2vtu.cli:main"

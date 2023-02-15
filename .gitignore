@@ -1,9 +1,12 @@
 *.vtu
+*.vtp
 *.pvd
 *.pyc
 
 !data/*.vtu
 !tests/ref.vtu
+!tests/ref.vtp
 extdata/
 src/netcdf2vtk.egg-info/
+src/netcdf2vtu.egg-info/
 temp/

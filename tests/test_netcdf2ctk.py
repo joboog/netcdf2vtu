@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 """These are the unit tests of the netcdf2vtu module."""
 
+from os.path import exists, isfile
+from pytest import raises
+import subprocess
+import shlex
+
 from netCDF4 import Dataset
 from numpy import array, ndarray
 from numpy.testing import assert_array_almost_equal
@@ -8,7 +13,6 @@ import vtk
 from vtkmodules.vtkCommonDataModel import vtkUnstructuredGrid, vtkPolyData
 from vtkmodules.vtkFiltersPoints import vtkVoronoiKernel, vtkGaussianKernel, vtkShepardKernel
 from vtk.numpy_interface import dataset_adapter as dsa
-from os.path import isfile
 
 import netcdf2vtu.netcdf2vtu as n2v
 
@@ -314,3 +318,56 @@ class TestFunctions():
         isinstance(map_fun1, vtkVoronoiKernel)
         isinstance(map_fun2, vtkGaussianKernel)
         isinstance(map_fun3, vtkShepardKernel)
+
+
+class TestCli():
+
+    def setup_method(self):
+        # def command for cli
+        self.com = ['netcdf2vtu', '-o', out_vtu_path,
+                    '-m', str(map_func_type), '-n', str(nullvalue),
+                    '--lat', coordnames[0], '--lon', coordnames[1],
+                    '--time', coordnames[2],
+                    nc_file1, in_vtu_path, nc_crs, vtu_crs,
+                    data_var_names[0]]
+
+
+    def test_successful_exec(self):
+
+        com = self.com
+        result = subprocess.run(self.com, stdout=subprocess.PIPE)
+        assert result.returncode == 0
+        assert exists(out_vtu_path)
+
+
+    def test_missing_required_args(self):
+
+        with raises(subprocess.CalledProcessError):
+            subprocess.run(["netcdf2vtu"], stdout=subprocess.PIPE,
+            check=True)
+
+
+    def test_default_vals(self):
+
+        com = self.com[:1]+self.com[11:]
+        result = subprocess.run(com, stdout=subprocess.PIPE)
+        assert result.returncode == 0
+        assert exists("out.vtu")
+
+
+    def test_invalid_arg_vals(self):
+
+        com = self.com[:1]+["-m", "X"]+self.com[11:]
+        with raises(subprocess.CalledProcessError):
+            subprocess.run(com, stdout=subprocess.PIPE, check=True)
+
+
+    def test_opt_args_not_given(self):
+
+        com = self.com
+        com.pop(11)
+        com.pop(11)
+        result = subprocess.run(com, stdout=subprocess.PIPE)
+        assert result.returncode == 0
+        assert exists("out.vtu")
+
