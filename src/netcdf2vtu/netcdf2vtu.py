@@ -232,17 +232,16 @@ def get_nc_data(nc, data_var_names):
 
     Returns
     -------
-    numpy array
-        A numpy array the a variable name and its corresponding data
-        as a numpy array.
+    list
+        A list of tuples, where each tuple contains a variable name and the corresponding data as a numpy array.
     """
 
-    var_data = [None] * len(data_var_names)
-    vars = np.array([data_var_names, var_data]).T
-    for i in range(len(vars)):
-        vars[i][1] = nc.variables[(vars[i][0])][:].filled()
-    #TODO: output vars as list of tuples instead of numpy array!
-    return(vars)
+    vars_data = []
+    for i, var_name in enumerate(data_var_names):
+        t = (var_name, nc.variables[var_name][:].filled())
+        vars_data.append(t)
+
+    return(vars_data)
 
 
 def create_vtp(lon_dat, lat_dat, nc_crs, vtu_crs):
@@ -329,9 +328,8 @@ def nc_data_to_vtp(vtp, nc_data, time = None):
     ----------
     vtp : vtk.vtkPolyData
         The vtkPolyData object to add the netcdf data to.
-    nc_data : numpy array
-        A numpy array of the a variable name and its corresponding data
-        as a numpy array
+    nc_data : list
+        A list of tuples, where each tuple contains a variable name and its corresponding data as a numpy array.
     time : numpy.ndarray, optional
         An array of time values for the netcdf data. If not provided,
         the time value will be set to "FALSE".
@@ -340,15 +338,15 @@ def nc_data_to_vtp(vtp, nc_data, time = None):
     if time is None:
         time = "F"
 
-    for j in range(len(nc_data)):
+    for j,val in enumerate(nc_data):
         for i in range(len(time)):
 
             if type(time) is str:
-                arr_name = nc_data[j][0]
+                arr_name = val[0]
             else:
-                arr_name = nc_data[j][0] + "_%s" % str(int(time[i]))
+                arr_name = val[0] + "_%s" % str(int(time[i]))
 
-            new_point_arr_vtk = numpy_support.numpy_to_vtk(nc_data[j][1][i].ravel())
+            new_point_arr_vtk = numpy_support.numpy_to_vtk(val[1][i].ravel())
             new_point_arr_vtk.SetName(arr_name)
             vtp.GetPointData().AddArray(new_point_arr_vtk)
 

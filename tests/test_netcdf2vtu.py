@@ -170,20 +170,22 @@ class TestFunctions():
 
     def test_get_nc_data(self):
 
-        arr = n2v.get_nc_data(self.dataset, self.nc_data_var)
+        l = n2v.get_nc_data(self.dataset, self.nc_data_var)
 
-        isinstance(arr, ndarray)
-        assert arr.shape == (2,2)
-        assert arr[0,0] == "SWC_L01"
-        assert arr[1,0] == "SWC_L02"
-        assert arr[0,1].shape == (2,27,21)
-        assert arr[1,1].shape == (2,27,21)
+        isinstance(l, list)
+        assert len(l) == 2
+        isinstance(l[0], tuple)
+        isinstance(l[1], tuple)
+        assert l[0][0] == "SWC_L01"
+        assert l[1][0] == "SWC_L02"
+        assert l[0][1].shape == (2,27,21)
+        assert l[1][1].shape == (2,27,21)
 
         # assert data
-        assert_array_almost_equal(arr[0,1][0], self.swcl01[0])
-        assert_array_almost_equal(arr[0,1][1], self.swcl01[1])
-        assert_array_almost_equal(arr[1,1][0], self.swcl02[0])
-        assert_array_almost_equal(arr[1,1][1], self.swcl02[1])
+        assert_array_almost_equal(l[0][1][0], self.swcl01[0])
+        assert_array_almost_equal(l[0][1][1], self.swcl01[1])
+        assert_array_almost_equal(l[1][1][0], self.swcl02[0])
+        assert_array_almost_equal(l[1][1][1], self.swcl02[1])
 
 
     def test_create_vtp_and_nc_data_to_vtp(self):
@@ -211,10 +213,9 @@ class TestFunctions():
         # create vtp and add data
         vtp = n2v.create_vtp(self.lon_dat, self.lat_dat, self.nc_crs, self.vtu_crs)
 
-        arr = array(
-            [["SWC_L01", self.swcl01],
-             ["SWC_L02", self.swcl02]])
-        n2v.nc_data_to_vtp(vtp, arr, self.time_dat)
+        l = [("SWC_L01", self.swcl01),
+             ("SWC_L02", self.swcl02)]
+        n2v.nc_data_to_vtp(vtp, l, self.time_dat)
 
         vtp_dsa = dsa.WrapDataObject(vtp)
 
@@ -245,10 +246,9 @@ class TestFunctions():
          # create vtp and add data
         vtp = n2v.create_vtp(self.lon_dat, self.lat_dat, self.nc_crs, self.vtu_crs)
 
-        arr = array(
-            [["SWC_L01", self.swcl01],
-             ["SWC_L02", self.swcl02]])
-        n2v.nc_data_to_vtp(vtp, arr, self.time_dat)
+        l = [("SWC_L01", self.swcl01),
+             ("SWC_L02", self.swcl02)]
+        n2v.nc_data_to_vtp(vtp, l, self.time_dat)
 
         # read vtu
         vtu = n2v.read_vtu(self.vtu_in)
