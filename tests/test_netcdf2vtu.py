@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """These are the unit tests of the netcdf2vtu module."""
 
-from os.path import exists, isfile
+import os
 from pytest import raises
 import subprocess
 import shlex
@@ -21,8 +21,11 @@ nc_file1 = "data/ex1_3.nc"
 nc_file2 = "data/ex2_4.nc"
 
 in_vtu_path = "data/ogs.vtu"
-out_vtu_path = "temp.vtu"
-out_vtp_path = "temp.vtp"
+out_vtu_path_mapper = "temp_mapper.vtu"
+out_vtp_path_mapper = "temp_mapper.vtp"
+out_vtu_path_fun = "temp_fun.vtu"
+out_vtp_path_fun =  "temp_fun.vtp"
+out_vtu_path_cli = "temp_cli.vtu"
 ref_vtp_path = "tests/ref.vtp"
 ref_vtu_path = "tests/ref.vtu"
 data_var_names = ["SWC_L01", "SWC_L02"]
@@ -38,8 +41,8 @@ class TestMapper():
         self.nc_file = nc_file1
         self.nc_data_var = data_var_names
         self.vtu_in = in_vtu_path
-        self.vtu_out = out_vtu_path
-        self.vtp_out = out_vtp_path
+        self.vtu_out = out_vtu_path_mapper
+        self.vtp_out = out_vtp_path_mapper
         self.nc_crs = nc_crs
         self.vtu_crs = vtu_crs
         self.map_func_type = map_func_type
@@ -93,11 +96,14 @@ class TestMapper():
         assert mapper.nullvalue == self.nullval
 
 
-    def test_map(self):
+    def test_map(self, tmp_path):
 
         a, b, c = self.coordnames
-        self.mapper.map(self.vtu_out, a, b, c)
-        self.mapper.write_vtp(self.vtp_out)
+        vtu_path = str(tmp_path/self.vtu_out)
+        vtp_path = str(tmp_path/self.vtp_out)
+
+        self.mapper.map(vtu_path, a, b, c)
+        self.mapper.write_vtp(vtp_path)
 
         # check variable names
         assert isinstance(self.mapper.nc["coord_names"], dict)
@@ -128,8 +134,8 @@ class TestMapper():
         isinstance(self.mapper.out_vtu, vtkUnstructuredGrid)
 
         # check written files
-        isfile(self.vtu_out)
-        isfile(self.vtp_out)
+        os.path.isfile(vtu_path)
+        os.path.isfile(vtp_path)
 
 
 class TestFunctions():
@@ -139,10 +145,10 @@ class TestFunctions():
         self.nc_file = nc_file1
         self.nc_data_var = data_var_names
         self.vtu_in = in_vtu_path
-        self.vtu_out = out_vtu_path
+        self.vtu_out = out_vtu_path_fun
         self.vtu_ref_path = ref_vtu_path
         self.vtp_ref = ref_vtp_path
-        self.vtp_out = out_vtp_path
+        self.vtp_out = out_vtp_path_fun
         self.nc_crs = nc_crs
         self.vtu_crs = vtu_crs
         self.map_func_type = map_func_type
@@ -170,20 +176,22 @@ class TestFunctions():
 
     def test_get_nc_data(self):
 
-        arr = n2v.get_nc_data(self.dataset, self.nc_data_var)
+        l = n2v.get_nc_data(self.dataset, self.nc_data_var)
 
-        isinstance(arr, ndarray)
-        assert arr.shape == (2,2)
-        assert arr[0,0] == "SWC_L01"
-        assert arr[1,0] == "SWC_L02"
-        assert arr[0,1].shape == (2,27,21)
-        assert arr[1,1].shape == (2,27,21)
+        isinstance(l, list)
+        assert len(l) == 2
+        isinstance(l[0], tuple)
+        isinstance(l[1], tuple)
+        assert l[0][0] == "SWC_L01"
+        assert l[1][0] == "SWC_L02"
+        assert l[0][1].shape == (2,27,21)
+        assert l[1][1].shape == (2,27,21)
 
         # assert data
-        assert_array_almost_equal(arr[0,1][0], self.swcl01[0])
-        assert_array_almost_equal(arr[0,1][1], self.swcl01[1])
-        assert_array_almost_equal(arr[1,1][0], self.swcl02[0])
-        assert_array_almost_equal(arr[1,1][1], self.swcl02[1])
+        assert_array_almost_equal(l[0][1][0], self.swcl01[0])
+        assert_array_almost_equal(l[0][1][1], self.swcl01[1])
+        assert_array_almost_equal(l[1][1][0], self.swcl02[0])
+        assert_array_almost_equal(l[1][1][1], self.swcl02[1])
 
 
     def test_create_vtp_and_nc_data_to_vtp(self):
@@ -211,10 +219,9 @@ class TestFunctions():
         # create vtp and add data
         vtp = n2v.create_vtp(self.lon_dat, self.lat_dat, self.nc_crs, self.vtu_crs)
 
-        arr = array(
-            [["SWC_L01", self.swcl01],
-             ["SWC_L02", self.swcl02]])
-        n2v.nc_data_to_vtp(vtp, arr, self.time_dat)
+        l = [("SWC_L01", self.swcl01),
+             ("SWC_L02", self.swcl02)]
+        n2v.nc_data_to_vtp(vtp, l, self.time_dat)
 
         vtp_dsa = dsa.WrapDataObject(vtp)
 
@@ -245,10 +252,9 @@ class TestFunctions():
          # create vtp and add data
         vtp = n2v.create_vtp(self.lon_dat, self.lat_dat, self.nc_crs, self.vtu_crs)
 
-        arr = array(
-            [["SWC_L01", self.swcl01],
-             ["SWC_L02", self.swcl02]])
-        n2v.nc_data_to_vtp(vtp, arr, self.time_dat)
+        l = [("SWC_L01", self.swcl01),
+             ("SWC_L02", self.swcl02)]
+        n2v.nc_data_to_vtp(vtp, l, self.time_dat)
 
         # read vtu
         vtu = n2v.read_vtu(self.vtu_in)
@@ -288,22 +294,24 @@ class TestFunctions():
         isinstance(vtu, vtkUnstructuredGrid)
 
 
-    def test_write_vtu(self):
+    def test_write_vtu(self, tmp_path):
 
-        n2v.write_vtu(self.ref_vtu, self.vtu_out)
-        isfile(self.vtu_out)
+        file = str(tmp_path/self.vtu_out)
+        n2v.write_vtu(self.ref_vtu, file)
+        os.path.isfile(file)
         # reload and test
         vtu = n2v.read_vtu(self.vtu_ref_path)
         isinstance(vtu, vtkUnstructuredGrid)
 
 
-    def test_write_vtp(self):
+    def test_write_vtp(self, tmp_path):
 
-        n2v.write_vtp(self.ref_vtp, self.vtp_out)
-        isfile(self.vtp_out)
+        file = str(tmp_path/self.vtp_out)
+        n2v.write_vtp(self.ref_vtp, file)
+        os.path.isfile(file)
         # reload and test
         rdr = vtk.vtkXMLPolyDataReader()
-        rdr.SetFileName(self.vtp_out)
+        rdr.SetFileName(file)
         rdr.Update()
         vtp = rdr.GetOutput()
         isinstance(vtp, vtkPolyData)
@@ -324,7 +332,7 @@ class TestCli():
 
     def setup_method(self):
         # def command for cli
-        self.com = ['netcdf2vtu', '-o', out_vtu_path,
+        self.com = ['netcdf2vtu', '-o', out_vtu_path_cli,
                     '-m', str(map_func_type), '-n', str(nullvalue),
                     '--lat', coordnames[0], '--lon', coordnames[1],
                     '--time', coordnames[2],
@@ -332,12 +340,14 @@ class TestCli():
                     data_var_names[0]]
 
 
-    def test_successful_exec(self):
+    def test_successful_exec(self, tmp_path):
 
-        com = self.com
-        result = subprocess.run(self.com, stdout=subprocess.PIPE)
+        com = self.com[:]
+        file = str(tmp_path/out_vtu_path_cli)
+        com[2] = file
+        result = subprocess.run(com, stdout=subprocess.PIPE)
         assert result.returncode == 0
-        assert exists(out_vtu_path)
+        assert os.path.isfile(file)
 
 
     def test_missing_required_args(self):
@@ -352,7 +362,9 @@ class TestCli():
         com = self.com[:1]+self.com[11:]
         result = subprocess.run(com, stdout=subprocess.PIPE)
         assert result.returncode == 0
-        assert exists("out.vtu")
+        assert os.path.isfile("out.vtu")
+        os.remove("out.vtu")
+
 
 
     def test_invalid_arg_vals(self):
@@ -362,12 +374,14 @@ class TestCli():
             subprocess.run(com, stdout=subprocess.PIPE, check=True)
 
 
-    def test_opt_args_not_given(self):
+    def test_opt_args_not_given(self, tmp_path):
 
-        com = self.com
+        com = self.com[:]
+        file = str(tmp_path/"5_")+out_vtu_path_cli
+        com[2] = file
         com.pop(11)
         com.pop(11)
         result = subprocess.run(com, stdout=subprocess.PIPE)
         assert result.returncode == 0
-        assert exists("out.vtu")
+        assert os.path.isfile(file)
 
