@@ -1,9 +1,10 @@
-"""A Python package to interpolate data from a netcdf file onto
-a VTU file.
+"""
+A Python package to interpolate data from a NetCFD file onto a VTU file.
 
-**netcdf2vtu** provides a the *Mapper* class to read in a netcdf input
-file, a destination VTU file and to set some specifics for data
-interpolation.
+    **netcdf2vtu** provides a the *Mapper* class to read in a NetCFD input
+    file, a destination VTU file and to set some specifics for data
+    interpolation.
+
 """
 
 from netCDF4 import Dataset
@@ -15,28 +16,27 @@ from vtk.util import numpy_support
 
 class Mapper(object):
     """
-    A class for reading and interpolating data from a netcdf file onto
-    a VTU file.
+    A class for interpolating data from a NetCFD file on a VTU file.
 
     Parameters
     ----------
     nc_path : str
-        The path to the netcdf input file.
+        The path to the NetCFD input file.
     vtu_path : str
         The path to the destination VTU file.
     data_var_names : list of str
-        A list of variable names to read from the netcdf file.
+        A list of variable names to read from the NetCFD file.
     map_func_type : int
         The type of mapping function to use for interpolation.
     nc_crs : str
-        The coordinate reference system of the netcdf file.
+        The coordinate reference system of the NetCFD file.
     vtu_crs : str
         The coordinate reference system of the VTU file.
     nullvalue : float
         The value to use for missing data points during interpolation.
     kwargs_nc : dict
-        Additional keyword arguments to pass to the netcdf4 library when
-         reading the netcdf file.
+        Additional keyword arguments to pass to the NetCFD4 library when
+         reading the NetCFD file.
 
     """
 
@@ -51,9 +51,6 @@ class Mapper(object):
         nullvalue,
         **kwargs_nc
     ):
-        """
-        Initializes the Mapper object with the provided inputs.
-        """
 
         self.nc = dict(path = nc_path,
                         crs = nc_crs,
@@ -76,9 +73,8 @@ class Mapper(object):
 
     def get_nc_variables(self):
         """
-        Returns a numpy.ndarray variable data of the netcdf dataset.
+        Returns a numpy.ndarray variable data of the NetCFD dataset.
         """
-
         self.nc["dataset"].variables
 
 
@@ -90,7 +86,6 @@ class Mapper(object):
         Sets the names of the latitude, longitude, and time variables
         to be read from the dataset in `self.nc["dataset"]`.
         """
-
         self.nc.update({"coord_names" : {"lat_name" : lat_name,
                                         "lon_name" : lon_name,
                                         "time_name" : time_name}})
@@ -98,24 +93,23 @@ class Mapper(object):
 
     def set_nc_data_names(self, var_names):
         """
-        Sets the names of the variables to be read from the netcdf
+        Sets the names of the variables to be read from the NetCFD
         dataset in `self.nc["dataset"]`.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         var_names : list of str
-            A list of variable names to read from the netcdf file.
+            A list of variable names to read from the NetCFD file.
         """
-
         self.nc["data_names"] = var_names
 
 
     def read_nc_coords(self):
         """
         Reads the latitude, longitude, and time coordinates from the
-        netcdf dataset in `self.nc["dataset"]`.
-        """
+        NetCFD dataset in `self.nc["dataset"]`.
 
+        """
         lat_name, lon_name, time_name = self.nc["coord_names"].values()
 
         lat_dat = self.nc["dataset"].variables[lat_name][:].filled()
@@ -133,9 +127,9 @@ class Mapper(object):
     def read_nc_data(self):
         """
         Reads the data variables specified in `self.nc["data_names"]`
-        from the netcdf dataset.
-        """
+        from the NetCFD dataset.
 
+        """
         nc_data = get_nc_data(self.nc["dataset"],
                                   self.nc["data_names"])
         self.nc.update({"data" : nc_data})
@@ -143,12 +137,12 @@ class Mapper(object):
 
     def interpolate(self):
         """
-        Interpolates the data from the netcdf file onto the VTU file.
+        Interpolates the data from the NetCFD file onto the VTU file.
         It creates a vtkPolyData instance from `self.nc["dataset"]` and
         interpolates this on a copy of an instance of
         vtkUnstructuredGrid created from the input VTU file.
-        """
 
+        """
         self.vtp = create_vtp(
                     self.nc["coords"]["lon"],
                     self.nc["coords"]["lat"],
@@ -176,12 +170,12 @@ class Mapper(object):
         Writes the updated instance of vtkUnstructuredGrid to the
         specified path as VTU file.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         path : str
             The path of the VTU file to be written.
-        """
 
+        """
         write_vtu(self.out_vtu, path)
         print("New VTU mesh written to disk.")
 
@@ -191,12 +185,12 @@ class Mapper(object):
         Writes the vtkPolyData instance created to the
         specified path as VTP file.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         path : str
             The path of the VTP file to be written.
-        """
 
+        """
         write_vtp(self.vtp, path)
 
 
@@ -208,7 +202,6 @@ class Mapper(object):
         """
         A wrapper for simple interpolation.
         """
-
         self.set_nc_coord_names(lat_name,
                                 lon_name,
                                 time_name)
@@ -226,7 +219,7 @@ def get_nc_data(nc, data_var_names):
     Parameters
     ----------
     nc : netCDF4.Dataset
-        The netcdf dataset to extract data from.
+        The NetCFD dataset to extract data from.
     data_var_names : list of str
         A list of variable names to extract from nc.
 
@@ -234,8 +227,8 @@ def get_nc_data(nc, data_var_names):
     -------
     list
         A list of tuples, where each tuple contains a variable name and the corresponding data as a numpy array.
-    """
 
+    """
     vars_data = []
     for i, var_name in enumerate(data_var_names):
         t = (var_name, nc.variables[var_name][:].filled())
@@ -252,7 +245,7 @@ def create_vtp(lon_dat, lat_dat, nc_crs, vtu_crs):
     coordinate reference system.
 
     initialize src_poly as vtkPolyData
-    set points and cells for src_poly (vtkPolyData object where netcdf
+    set points and cells for src_poly (vtkPolyData object where NetCFD
     data goes into)
     cells are vertice cells based on points
     point coordinates are transformed
@@ -275,8 +268,8 @@ def create_vtp(lon_dat, lat_dat, nc_crs, vtu_crs):
     vtk.vtkPolyData
         A vtkPolyData object with points and cells set based on input
         coordinates.
-    """
 
+    """
     # check dims and def point array
     if len(lon_dat.shape) == 1 and len(lat_dat.shape) == 1:
 
@@ -321,20 +314,20 @@ def create_vtp(lon_dat, lat_dat, nc_crs, vtu_crs):
 
 def nc_data_to_vtp(vtp, nc_data, time = None):
     """
-    Adds extracted variable data from a netcdf file to a vtkPolyData
+    Adds extracted variable data from a NetCFD file to a vtkPolyData
     object.
 
     Parameters
     ----------
     vtp : vtk.vtkPolyData
-        The vtkPolyData object to add the netcdf data to.
+        The vtkPolyData object to add the NetCFD data to.
     nc_data : list
         A list of tuples, where each tuple contains a variable name and its corresponding data as a numpy array.
     time : numpy.ndarray, optional
-        An array of time values for the netcdf data. If not provided,
+        An array of time values for the NetCFD data. If not provided,
         the time value will be set to "FALSE".
-    """
 
+    """
     if time is None:
         time = "F"
 
@@ -364,8 +357,8 @@ def write_vtp(vtp, outputfile_name):
         The vtkPolyData object to write to a file.
     outputfile_name : str
         The path of the file to write the vtkPolyData object to.
-    """
 
+    """
     write_ouput = vtk.vtkXMLPolyDataWriter()
     write_ouput.SetInputData(vtp)
     write_ouput.SetFileName(outputfile_name)
@@ -385,8 +378,8 @@ def read_vtu(in_filepath):
     -------
     vtk.vtkUnstructuredGrid
         The VTU file as a vtkUnstructuredGrid instance.
-    """
 
+    """
     dst = vtk.vtkXMLUnstructuredGridReader()
     dst.SetFileName(in_filepath)
     dst.Update()
@@ -413,8 +406,8 @@ def interpolate_vtp_data_on_vtu(vtp, vtu, map_func_type, nullvalue):
     -------
     vtk.vtkUnstructuredGrid
         An object with the interpolated data.
-    """
 
+    """
     interpolator = vtk.vtkPointInterpolator()
     interpolator.SetInputData(vtu)
     interpolator.SetSourceData(vtp)
@@ -437,6 +430,7 @@ def write_vtu(vtu, path):
         The vtkUnstructuredGrid object to write to a file.
     outputfile_name : str
         The path of the VTU file to be written.
+
     """
     write_output = vtk.vtkXMLUnstructuredGridWriter()
     write_output.SetFileName(path)
@@ -460,8 +454,8 @@ def set_map_function(map_func_type):
     -------
     vtk.vtkInterpolationKernel
         An object of the specified interpolation/mapping algorithm.
-    """
 
+    """
     switcher = {
         1: voronoi_kernel,
         2: gaussian_kernel,
@@ -481,6 +475,7 @@ def gaussian_kernel():
     -------
     vtk.vtkGaussianKernel
         The Gaussian filter interpolation kernel.
+
     """
     int_kernel = vtk.vtkGaussianKernel()
     int_kernel.SetSharpness(2)
@@ -498,6 +493,7 @@ def voronoi_kernel():
     -------
     vtk.vtkVoronoiKernel
         The voronoi interpolation kernel.
+
     """
     int_kernel = vtk.vtkVoronoiKernel()
     return(int_kernel)
@@ -512,6 +508,7 @@ def shepard_kernel():
     -------
     vtk.vtkShepardKernel
         The Shepard interpolation kernel.
+
     """
     int_kernel = vtk.vtkShepardKernel()
     int_kernel.SetPowerParameter(2)
