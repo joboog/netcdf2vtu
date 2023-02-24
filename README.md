@@ -131,5 +131,5 @@ optional arguments:
 
 If there are any problems please raise an issue [here](https://gitlab.com/joboog/netcdf2vtu/-/issues).
 
-Please look at [CONTRIBUTING.md](./CONTRIBUTING.md).
+Please look at [CONTRIBUTING.md](https://gitlab.com/joboog/netcdf2vtu/-/blob/master/CONTRIBUTING.md).
 
