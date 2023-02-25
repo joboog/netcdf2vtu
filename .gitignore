@@ -6,6 +6,9 @@
 !data/*.vtu
 !tests/ref.vtu
 !tests/ref.vtp
+docs/build
+docs/make.bat
+docs/Makefile
 extdata/
 src/netcdf2vtk.egg-info/
 src/netcdf2vtu.egg-info/
