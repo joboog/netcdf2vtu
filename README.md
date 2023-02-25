@@ -8,14 +8,15 @@ Netcdf2vtu is a Python package including a command line interface (CLI)
 
 ## Setup
 
-The package is still under development and not yet available on as
-package on https://pypi.org .
-You have to actually install it from a clone of the repo.
-
 Ideally, you have created a virtual python environment. If not look
 [here](https://packaging.python.org/en/latest/tutorials/installing-packages/#creating-virtual-environments).
 
-Then clone the repo:
+A stable release is available on https://pypi.org so you can install it via
+```
+$ python3 -m pip install netcdf2vtu
+```
+
+To install the development version, you have to actually install it from a clone of this repo.
 ```
 $ git clone https://gitlab.com/joboog/netcdf2vtu.git
 ```
