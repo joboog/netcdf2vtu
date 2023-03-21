@@ -4,6 +4,7 @@
 [![Test Coverage](https://gitlab.com/joboog/netcdf2vtu/badges/master/coverage.svg)](https://gitlab.com/joboog/netcdf2vtu/-/jobs)
 [![Documentation Status](https://readthedocs.org/projects/netcdf2vtu/badge/?version=latest)](https://netcdf2vtu.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/netcdf2vtu.svg)](https://badge.fury.io/py/netcdf2vtu)
+[![Zenodo](https://zenodo.org/badge/DOI/10.5281/zenodo.7757481.svg)](https://doi.org/10.5281/zenodo.7757480)
 
 Netcdf2vtu is a Python package including a command line interface (CLI)
  to interpolate data from netCDF on VTU files.
